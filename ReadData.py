@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 class ReadData:
-    def __init__(self, path_csv, embedding_model, batch_size=32, val_split=0.1):
+    def __init__(self, path_csv, embedding_model, batch_size=32, train_val_split=0.1):
         self.text2vec = Text2Vector(embedding_model)
         self.data = pd.read_csv(path_csv, sep="|")
         self.data = self.data.sample(frac=1).reset_index(drop=True)
