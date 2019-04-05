@@ -12,9 +12,9 @@ class ReadData:
         self.data = self.data.sample(frac=1).reset_index(drop=True)
         self.data_size = len(self.data)
 
-        self.train = self.data.head(int(self.data_size*(1-val_split))).reset_index(drop=True)
+        self.train = self.data.head(int(self.data_size*(1-train_val_split))).reset_index(drop=True)
         self.train_size = len(self.train)
-        self.val = self.data.tail(int(self.data_size*val_split)).reset_index(drop=True)
+        self.val = self.data.tail(int(self.data_size*train_val_split)).reset_index(drop=True)
         self.val_size = len(self.val)
 
         self.classes = ['male10', 'male20', 'male30', 'female10', 'female20', 'female30']
