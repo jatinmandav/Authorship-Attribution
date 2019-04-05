@@ -10,7 +10,7 @@ import numpy as np
 import argparse
 
 from keras.optimizers import Adam, RMSprop, SGD
-from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
+from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 class TrainValTensorBoard(TensorBoard):
     def __init__(self, log_dir='./logs', **kwargs):
