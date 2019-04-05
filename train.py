@@ -45,12 +45,12 @@ class TrainValTensorBoard(TensorBoard):
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm]', required=True)
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
-parser.add_argument('--embedding', '-e', help='Path to word embedding model', default='skipgram-100/skipgram.bin')
-parser.add_argument('--n_classes', '-n', help='No of classes to predict', default=6, type=int)
-parser.add_argument('--optimizer', '-o', help='which Optimizer to use?', default='adam')
-parser.add_argument('--batch_size', '-b', help='What should be the batch size?', default=32, type=int)
-parser.add_argument('--epochs', '-ep', help='How many epochs to Train?', default=100, type=int)
-parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction?', default=0.1, type=float)
+parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "skipgram-100/skipgram.bin"', default='skipgram-100/skipgram.bin')
+parser.add_argument('--n_classes', '-n', help='No of classes to predict | Default: 6', default=6, type=int)
+parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "Adam"', default='adam')
+parser.add_argument('--batch_size', '-b', help='What should be the batch size? | Default: 32', default=32, type=int)
+parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 100', default=100, type=int)
+parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
 
 args = parser.parse_args()
 
@@ -100,7 +100,7 @@ earlystopper = EarlyStopping(monitor='val_loss',
                               patience=5,
                               verbose=1, mode='auto')
 
-reader = ReadData(args.training_csv, args.embeddings,
+reader = ReadData(args.training_csv, args.embedding,
                   batch_size=args.batch_size, train_val_split=args.train_val_split)
 
 train_generator = reader.generate_train_batch()
