@@ -5,9 +5,9 @@ from bs4 import BeautifulSoup
 
 #text_file = open('raw_blog_text.txt', 'w')
 
-for dir_ in ['training', 'test']:
+for dir_ in ['data/training', 'data/test']:
     csv_file = open('{}_blogs_data.csv'.format(dir_), 'w')
-    csv_file.write('Gender,Age_Group,Profession,Post\n')
+    csv_file.write('Gender|Age_Group|Profession|Post\n')
 
     for xml_file in tqdm(os.listdir(dir_)):
         gender, age, profession = xml_file.split('.')[1:4]
@@ -27,8 +27,9 @@ for dir_ in ['training', 'test']:
                 line = line.replace('\n', '')
                 line = line.replace('urlLink', '')
                 line = line.replace('  ', '')
+                line = line.replace('|', ' ')
 
-                csv_file.write('{},{},{},{}\n'.format(gender, age_group, profession, line))
+                csv_file.write('{}|{}|{}|{}\n'.format(gender, age_group, profession, line))
 
 #text_file.close()
 csv_file.close()

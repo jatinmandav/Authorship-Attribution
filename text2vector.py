@@ -10,22 +10,26 @@ class Text2Vector:
     def convert(self, text):
         words = word_tokenize(text)
 
-        embedding = []
+        vector = []
 
         for word in words:
             try:
-                if embedding == []:
-                    embedding = np.array(self.model[word])
+                if vector == []:
+                    vector = np.array(self.model[word])
                 else:
                     #embedding = np.linalg.multi_add([embedding, self.model[word]])
-                    embedding = np.array(embedding + self.model[word])
-                    embedding = embedding/2
+                    vector = np.array(vector + self.model[word])
+                    vector = vector/2
             except Exception as e:
-                pass
+                print('In text2vector.py: {}'.format(e))
 
-        return embedding
+        vector = np.reshape(vector, (vector.shape[0], 1))
+        return vector
 
-text2vector = Text2Vector('skipgram-100/skipgram.bin')
-print('Generating embedding ..')
-text = "Any text sample here!!!"
-print(text2vector.convert(text))
+
+if __name__ == "__main__":
+    text2vector = Text2Vector('embeddings/skipgram-100/skipgram.bin')
+    print('Generating embedding ..')
+    text = "Any text sample here!!!"
+    vector = text2vector.convert(text)
+    print(vector.shape)
