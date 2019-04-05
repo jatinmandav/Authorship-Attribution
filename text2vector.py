@@ -4,11 +4,12 @@ from nltk.tokenize import word_tokenize
 
 class Text2Vector:
     def __init__(self, model_path):
-        print('Loading model {}'.format(model_path))
+        print('Loading embedding model {}'.format(model_path))
         self.model = fasttext.load_model(model_path)
 
     def convert(self, text):
-        words = word_tokenize(text)
+        #words = word_tokenize(text)
+        words = text.split(' ')
 
         vector = []
 
