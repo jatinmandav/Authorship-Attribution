@@ -12,6 +12,8 @@ import argparse
 from keras.optimizers import Adam, RMSprop, SGD
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
+import tensorflow as tf
+
 class TrainValTensorBoard(TensorBoard):
     def __init__(self, log_dir='./logs', **kwargs):
         training_log_dir = os.path.join(log_dir, 'training')
