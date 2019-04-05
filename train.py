@@ -43,13 +43,14 @@ class TrainValTensorBoard(TensorBoard):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', help='Name of Model to use [lstm, cnn, cnnlstm]', required=True)
-parser.add_argument('--training_csv', help='Path to Training CSV file', required=True)
-parser.add_argument('--embedding', help='Path to word embedding model', default='skipgram-100/skipgram.bin')
-parser.add_argument('--n_classes', help='No of classes to predict', default=6, type=int)
-parser.add_argument('--optimizer', help='which Optimizer to use?', default='adam')
-parser.add_argument('--batch_size', help='What should be the batch size?', default=32, type=int)
-parser.add_argument('--epochs', help='How many epochs to Train?', default=100, type=int)
+parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm]', required=True)
+parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
+parser.add_argument('--embedding', '-e', help='Path to word embedding model', default='skipgram-100/skipgram.bin')
+parser.add_argument('--n_classes', '-n', help='No of classes to predict', default=6, type=int)
+parser.add_argument('--optimizer', '-o', help='which Optimizer to use?', default='adam')
+parser.add_argument('--batch_size', '-b', help='What should be the batch size?', default=32, type=int)
+parser.add_argument('--epochs', '-ep', help='How many epochs to Train?', default=100, type=int)
+parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction?', default=0.1, type=float)
 
 args = parser.parse_args()
 
@@ -99,12 +100,15 @@ earlystopper = EarlyStopping(monitor='val_loss',
                               patience=5,
                               verbose=1, mode='auto')
 
-reader = ReadData('data/training_blogs_data.csv', 'embeddings/skipgram-100/skipgram.bin', batch_size=args.batch_size)
-generator = reader.read()
+reader = ReadData(args.training_csv, args.embeddings,
+                  batch_size=args.batch_size, train_val_split=args.train_val_split)
 
-model.fit_generator(generator=generator, steps_per_epoch=int(reader.data_size/args.batch_size),
-          epochs=args.epochs, verbose=1,
-          callbacks=[tensorboard, reduce_lr, earlystopper, checkpoint])
+train_generator = reader.generate_train_batch()
+val_generator = reader.generate_train_batch()
+
+model.fit_generator(generator=train_generator, steps_per_epoch=int(reader.train_size/args.batch_size),
+          validation_data=val_generator, validation_steps=int(reader.val_size/args.batch_size),
+          epochs=args.epochs, verbose=1, callbacks=[tensorboard, reduce_lr, earlystopper, checkpoint])
 
 m.save_weights(os.path.join(weights_dir, "final_weights.model"))
 m.save(os.path.join(weights_dir, "final.model"))
