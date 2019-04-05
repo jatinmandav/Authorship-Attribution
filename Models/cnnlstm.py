@@ -22,7 +22,7 @@ def CNNLSTMModel(input_shape, output_shape):
     x = MaxPooling1D(pool_size=5, strides=2)(x)
 
 
-    x = LSTM(256, return_sequences=True)(x)
+    x = LSTM(128, return_sequences=True)(x)
 
     x = Flatten()(x)
     x = Dense(512, activation='relu')(x)

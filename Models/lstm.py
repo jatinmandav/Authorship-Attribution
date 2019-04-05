@@ -9,9 +9,9 @@ import keras.backend as K
 def LSTMModel(input_shape, output_shape):
     inp = Input(shape=input_shape)
 
-    x = LSTM(256)(inp)
+    x = LSTM(128)(inp)
     x = RepeatVector(input_shape[0])(x)
-    x = LSTM(256)(x)
+    x = LSTM(128)(x)
 
     x = Dense(512, activation='relu')(x)
     x = Dropout(0.2)(x)

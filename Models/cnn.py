@@ -29,9 +29,9 @@ def CNNModel(input_shape, output_shape):
     x = MaxPooling1D(pool_size=2, strides=2)(x)
 
     x = Flatten()(x)
-    x = Dense(1024, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     x = Dropout(0.2)(x)
-    x = Dense(1024, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     x = Dropout(0.2)(x)
 
     out = Dense(output_shape, activation='softmax')(x)
