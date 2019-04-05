@@ -93,6 +93,9 @@ model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['ac
 model.summary()
 
 logging = TrainValTensorBoard(log_dir=log_dir)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                              patience=2, min_lr=0, verbose=1, cooldown=1)
+
 checkpoint = ModelCheckpoint(weights_dir + '/ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='loss', save_weights_only=True, save_best_only=True, period=3)
 earlystopper = EarlyStopping(monitor='val_loss',
@@ -108,7 +111,7 @@ val_generator = reader.generate_train_batch()
 
 model.fit_generator(generator=train_generator, steps_per_epoch=int(reader.train_size/args.batch_size),
           validation_data=val_generator, validation_steps=int(reader.val_size/args.batch_size),
-          epochs=args.epochs, verbose=1, callbacks=[tensorboard, reduce_lr, earlystopper, checkpoint])
+          epochs=args.epochs, verbose=1, callbacks=[logging, reduce_lr, earlystopper, checkpoint])
 
 m.save_weights(os.path.join(weights_dir, "final_weights.model"))
 m.save(os.path.join(weights_dir, "final.model"))
