@@ -53,6 +53,7 @@ parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default
 parser.add_argument('--batch_size', '-b', help='What should be the batch size? | Default: 32', default=32, type=int)
 parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 100', default=100, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
+parser.add_argument('--no_samples', '-ns', help='How many samples to train on? | Default: 1000000', default=1000000, type=int)
 
 args = parser.parse_args()
 
@@ -106,7 +107,8 @@ earlystopper = EarlyStopping(monitor='val_loss',
                               verbose=1, mode='auto')
 
 reader = ReadData(args.training_csv, args.embedding,
-                  batch_size=args.batch_size, train_val_split=args.train_val_split)
+                  batch_size=args.batch_size, no_samples=args.no_samples,
+                  train_val_split=args.train_val_split)
 
 train_generator = reader.generate_train_batch()
 val_generator = reader.generate_train_batch()

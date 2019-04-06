@@ -24,8 +24,8 @@ def CNNModel(input_shape, output_shape):
     x = Conv1D(64, kernel_size=3, padding='same', activation='relu')(x)
     x = MaxPooling1D(pool_size=2, strides=2)(x)
 
-    x = Conv1D(128, kernel_size=3, padding='same', activation='relu')(x)
-    x = Conv1D(128, kernel_size=3, padding='same', activation='relu')(x)
+    x = Conv1D(256, kernel_size=3, padding='same', activation='relu')(x)
+    x = Conv1D(256, kernel_size=3, padding='same', activation='relu')(x)
     x = MaxPooling1D(pool_size=2, strides=2)(x)
 
     x = Flatten()(x)
