@@ -12,9 +12,9 @@ class ReadData:
         self.data = self.data.sample(frac=1).reset_index(drop=True).head(no_samples)
         self.data_size = len(self.data)
 
-        print(self.data.head())
+        #print(self.data.head())
 
-        exit()
+        #exit()
         self.train = self.data.head(int(self.data_size*(1-train_val_split))).reset_index(drop=True)
         self.train_size = len(self.train)
         self.val = self.data.tail(int(self.data_size*train_val_split)).reset_index(drop=True)
