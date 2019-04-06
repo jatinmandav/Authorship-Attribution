@@ -40,7 +40,8 @@ class ReadData:
                         j += 1
                         continue
                     try:
-                        label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
+                        #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
+                        label = '{}'.format(self.val['Gender'][j])
                         one_hot = np.zeros(len(self.classes))
                         one_hot[self.classes.index(label)] = 1
                         labels.append(one_hot)
