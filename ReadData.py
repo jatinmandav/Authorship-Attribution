@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 
 class ReadData:
-    def __init__(self, path_csv, embedding_model, batch_size=32, no_samples=1000000, train_val_split=0.1):
-        self.text2vec = Text2Vector(embedding_model)
+    def __init__(self, path_csv, embedding_model, batch_size=32, no_samples=10000, train_val_split=0.1):
+        self.text2vec = Text2Vector(embedding_model, size=(100, 101))
         self.data = pd.read_csv(path_csv, sep="|")
         self.data = self.data.sample(frac=1).reset_index(drop=True)
         self.data = self.data.sample(frac=1).reset_index(drop=True).head(no_samples)
@@ -26,6 +26,50 @@ class ReadData:
 
     def get_embedding(self, text):
         return self.text2vec.convert(text)
+
+    def read_all_train(self):
+        vectors = []
+        labels = []
+
+        for i in range(self.train_size):
+            try:
+                if len(str(self.train['Post'][i]).split()) < 15:
+                    continue
+
+                #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
+                label = '{}'.format(self.train['Gender'][i])
+                one_hot = np.zeros(len(self.classes))
+                one_hot[self.classes.index(label)] = 1
+                labels.append(one_hot)
+
+                vector = self.get_embedding(str(self.train['Post'][i]))
+                vectors.append(np.array(vector))
+            except Exception as e:
+                print(e, self.train['Post'][i])
+
+        vectors, labels = np.array(vectors), np.array(labels)
+        return vectors, labels
+
+    def read_all_val(self):
+        vectors = []
+        labels = []
+
+        for i in range(self.val_size):
+            try:
+                if len(str(self.val['Post'][i]).split()) < 15:
+                    continue
+                #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
+                label = '{}'.format(self.val['Gender'][i])
+                one_hot = np.zeros(len(self.classes))
+                one_hot[self.classes.index(label)] = 1
+                labels.append(one_hot)
+
+                vector = self.get_embedding(str(self.val['Post'][i]))
+                vectors.append(vector)
+            except Exception as e:
+                print(e)
+
+        return np.array(vectors), np.array(labels)
 
     def generate_val_batch(self):
         no_batches = int(len(self.val['Post'])/self.batch_size)

@@ -1,36 +1,69 @@
 import fasttext
 import numpy as np
 from nltk.tokenize import word_tokenize
+import nltk.data
+from collections import Counter
+import pandas as pd
 
 class Text2Vector:
-    def __init__(self, model_path):
+    def __init__(self, model_path, size):
         print('Loading embedding model {}'.format(model_path))
         self.model = fasttext.load_model(model_path)
+        self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+        self.size = size
+
+    def calculate_tf_idf(self, raw_count, max_raw_count_in_document, no_documents, no_documents_in_which_word_occured):
+        tf = 0.5 + 0.5*(raw_count/max_raw_count_in_document)
+        idf = np.log(no_documents/(1 + no_documents_in_which_word_occured))
+        return tf*idf
 
     def convert(self, text):
-        #words = word_tokenize(text)
-        words = text.split(' ')
+        raw_words = word_tokenize(text)
+        #words = text.split(' ')
+        sentences = self.sent_detector.tokenize(text)
+        for i in range(len(sentences)):
+            sentences[i] = word_tokenize(sentences[i])
 
-        vector = []
+        vocab_words = set(raw_words)
 
-        for word in words:
+        word_count = Counter(raw_words)
+        raw_count = Counter(raw_words)
+        max_raw_count_in_sent = next(iter(word_count.values()))
+
+        for word in word_count:
+            count = 0
+            for sent in sentences:
+                if word in sent:
+                    count += 1
+
+            no_sent_in_which_word_occured = count
+            word_count[word] = self.calculate_tf_idf(word_count[word], max_raw_count_in_sent, len(sentences), no_sent_in_which_word_occured)
+
+        data_dict = {'word': list(word_count.keys()), 'TF_IDF': list(word_count.values())}
+        df = pd.DataFrame.from_dict(data_dict).reset_index(drop=True)
+        df = df.sort_values('TF_IDF', ascending=True).reset_index(drop=True)
+        df = df.head(100)
+
+        vectors = []
+
+        for i, word in enumerate(df['word']):
             try:
-                if vector == []:
-                    vector = np.array(self.model[word])
-                else:
-                    #embedding = np.linalg.multi_add([embedding, self.model[word]])
-                    vector = np.array(vector + self.model[word])
-                    vector = vector/2
+                vector = np.array(self.model[word])
+                vectors.append(list(vector) + [df['TF_IDF'][i]])
             except Exception as e:
                 print('In text2vector.py: {}'.format(e))
 
-        vector = np.reshape(vector, (vector.shape[0], 1))
-        return vector
+        for i in range(self.size[0] - len(vectors)):
+            vectors.append(np.zeros(self.size[1]))
+
+        vectors = np.array(vectors)
+        return vectors
 
 
 if __name__ == "__main__":
-    text2vector = Text2Vector('embeddings/skipgram-100/skipgram.bin')
+    text2vector = Text2Vector('embeddings/skipgram-100/skipgram.bin', (100, 101))
     print('Generating embedding ..')
-    text = "Any text sample here!!!"
+    text = "Any text here!!!!!"
     vector = text2vector.convert(text)
+    print(vector)
     print(vector.shape)
