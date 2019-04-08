@@ -45,7 +45,7 @@ reader = ReadData(args.training_csv, args.embedding,
 
 print('Reading Validation data.')
 val_x, val_y = reader.read_all_val()
-if args.model_name.startswith('cnn'):
+if args.model.startswith('cnn'):
     val_x = np.reshape(val_x, (val_x.shape[0], timesteps, embed_size, 1))
 
 with tf.name_scope('Model'):
@@ -101,7 +101,7 @@ with tf.Session() as sess:
                 i = end
 
                 epoch_x, epoch_y = reader.get_next_batch(start, end)
-                if args.model_name.startswith('cnn'):
+                if args.model.startswith('cnn'):
                     epoch_x = np.reshape(epoch_x, (epoch_x.shape[0], timesteps, embed_size, 1))
                 _, c, summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={x: epoch_x, y:epoch_y})
                 train_summary_writer.add_summary(summary, epoch*no_batches+batch_num)
