@@ -1,4 +1,5 @@
 from tf_models.lstm import LSTMModel
+from tf_models.conv import ConvModel
 from tf_models.convlstm import ConvLSTMModel
 import tensorflow as tf
 import numpy as np
@@ -37,7 +38,10 @@ if args.model == 'lstm':
 elif args.model.startswith('cnn'):
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
-    model = ConvLSTMModel()
+    if args.model.endswith('lstm'):
+        model = ConvLSTMModel(hidden_states, classes)
+    else:
+        model = ConvModel(classes)
 
 reader = ReadData(args.training_csv, args.embedding,
                   batch_size=args.batch_size, no_samples=args.no_samples,
