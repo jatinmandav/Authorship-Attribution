@@ -1,14 +1,19 @@
 import fasttext
 import numpy as np
 from nltk.tokenize import word_tokenize
+from nltk import pos_tag
 import nltk.data
 from collections import Counter
 import pandas as pd
 
 class Text2Vector:
-    def __init__(self, model_path, size):
-        print('Loading embedding model {}'.format(model_path))
-        self.model = fasttext.load_model(model_path)
+    def __init__(self, embed_path, pos_model, size):
+        print('Loading embedding model {}'.format(embed_path))
+        self.embed_model = fasttext.load_model(embed_path)
+
+        #print('Loading POS model {}'.format(pos_model))
+        #self.pos_model = fasttext.load_model(pos_model)
+
         self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
         self.size = size
 
@@ -42,14 +47,16 @@ class Text2Vector:
         data_dict = {'word': list(word_count.keys()), 'TF_IDF': list(word_count.values())}
         df = pd.DataFrame.from_dict(data_dict).reset_index(drop=True)
         df = df.sort_values('TF_IDF', ascending=True).reset_index(drop=True)
-        df = df.head(100)
+        df = df.head(self.size[0])
 
         vectors = []
 
         for i, word in enumerate(df['word']):
             try:
-                vector = np.array(self.model[word])
-                vectors.append(list(vector) + [df['TF_IDF'][i]])
+                embed_vector = np.array(self.embed_model[word])
+                #pos_vector = np.array(self.pos_model[pos_tag([word])[0][1]])
+                #vectors.append(list(embed_vector) + [df['TF_IDF'][i]] + list(pos_vector))
+                vectors.append(list(embed_vector) + [df['TF_IDF'][i]])
             except Exception as e:
                 print('In text2vector.py: {}'.format(e))
 
@@ -61,7 +68,7 @@ class Text2Vector:
 
 
 if __name__ == "__main__":
-    text2vector = Text2Vector('embeddings/skipgram-100/skipgram.bin', (100, 101))
+    text2vector = Text2Vector('embeddings/skipgram-100/skipgram.bin', 'embeddings/skipgram-pos-100/skipgram_pos.bin', (100, 201))
     print('Generating embedding ..')
     text = "Any text here!!!!!"
     vector = text2vector.convert(text)

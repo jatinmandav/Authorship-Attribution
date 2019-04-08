@@ -11,7 +11,16 @@ class NamedEntityRecognition:
     def __init__(self):
         self.sentTokenizer = PunktSentenceTokenizer()
 
-    def get_pos_tag(self, posts):
+    def get_pos_tag(self, text):
+        for line in sentences:
+            tags = pos_tag(word_tokenize(line))
+
+        print(tags)
+
+
+
+
+    '''def get_pos_tag(self, posts):
         #sentences = self.sentTokenizer.tokenize(text)
         #sentences = [sent for sent in sentences if len(word_tokenize(str(sent))) > 20]
 
@@ -25,14 +34,11 @@ class NamedEntityRecognition:
                     f.write('\n')
 
 
-        return pos_tags
+        return pos_tags'''
 
 ner = NamedEntityRecognition()
-df = pd.read_csv('data/training_blogs_data.csv', sep="|")
+'''df = pd.read_csv('data/training_blogs_data.csv', sep="|")
 
-post = df['Post']
-
-pos_tags = ner.get_pos_tag(post)
-'''    for tag in tqdm(pos_tags, desc='Writing Data: '):
-        f.write('{} '.format(tag[1]))
-'''
+post = df['Post']'''
+#pos_tags = ner.get_pos_tag('this')
+print(pos_tag(['this'])[0][1])
