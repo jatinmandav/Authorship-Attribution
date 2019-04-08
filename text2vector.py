@@ -7,13 +7,10 @@ from collections import Counter
 import pandas as pd
 
 class Text2Vector:
-    def __init__(self, embed_path, pos_model, size):
+    def __init__(self, embed_path, size):
         print('Loading embedding model {}'.format(embed_path))
         self.embed_model = fasttext.load_model(embed_path)
-
-        #print('Loading POS model {}'.format(pos_model))
-        #self.pos_model = fasttext.load_model(pos_model)
-
+        
         self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
         self.size = size
 
@@ -54,8 +51,6 @@ class Text2Vector:
         for i, word in enumerate(df['word']):
             try:
                 embed_vector = np.array(self.embed_model[word])
-                #pos_vector = np.array(self.pos_model[pos_tag([word])[0][1]])
-                #vectors.append(list(embed_vector) + [df['TF_IDF'][i]] + list(pos_vector))
                 vectors.append(list(embed_vector) + [df['TF_IDF'][i]])
             except Exception as e:
                 print('In text2vector.py: {}'.format(e))

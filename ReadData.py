@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 
 class ReadData:
-    def __init__(self, path_csv, embedding_model, pos_model, batch_size=32, no_samples=10000, train_val_split=0.1):
-        self.text2vec = Text2Vector(embedding_model, pos_model, size=(75, 101))
+    def __init__(self, path_csv, embedding_model, batch_size=32, no_samples=10000, train_val_split=0.1):
+        self.text2vec = Text2Vector(embedding_model, size=(75, 101))
         self.data = pd.read_csv(path_csv, sep="|")
         self.data = self.data.sample(frac=1).reset_index(drop=True)
         self.data = self.data.sample(frac=1).reset_index(drop=True).head(no_samples)

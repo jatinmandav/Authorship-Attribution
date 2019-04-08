@@ -11,18 +11,23 @@ class LSTMModel:
         x = tf.unstack(x, self.timesteps, 1)
 
         lstmcells = []
-        for _ in range(3):
+        for _ in range(2):
             lstmcells.append(rnn.BasicLSTMCell(self.hidden_states))
 
         multilstm= rnn.MultiRNNCell(lstmcells)
         rnn_output, states = tf.nn.static_rnn(multilstm, x, dtype=tf.float32)
 
-        weights = tf.Variable(tf.random_normal([self.hidden_states, self.no_classes]))
-        biases = tf.Variable(tf.random_normal([self.no_classes]))
+        weights1 = tf.Variable(tf.random_normal([self.hidden_states, 1024]))
+        biases1 = tf.Variable(tf.random_normal([1024]))
+        output1 = tf.add(tf.matmul(rnn_output[-1], weights1), biases1)
 
-        output = tf.add(tf.matmul(rnn_output[-1], weights), biases)
+        output1 = tf.nn.relu(output1, 0.75)
 
-        return output
+        weights2 = tf.Variable(tf.random_normal([1024, self.no_classes]))
+        biases2 = tf.Variable(tf.random_normal([self.no_classes]))
+        output2 = tf.add(tf.matmul(output1, weights2), biases2)
+
+        return output2
 
 if __name__ == "__main__":
     hidden_states = 512
