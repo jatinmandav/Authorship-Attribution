@@ -27,14 +27,14 @@ class ConvLSTMModel:
         max_pool1 = self.max_pool2d(relu1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1])
         #max_pool1 = self.batch_normalization(max_pool1)
 
-        weight2 = tf.Variable(tf.random_normal([3, 3, 64, 64]))
+        weight2 = tf.Variable(tf.random_normal([3, 3, 32, 64]))
         bias2 = tf.Variable(tf.random_normal([64]))
         conv2 = self.conv2d(max_pool1, filter=weight2, strides=[1, 2, 2, 1])
         relu2 = self.relu(tf.add(conv2, bias2))
         max_pool2 = self.max_pool2d(relu2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1])
         #max_pool2 = self.batch_normalization(max_pool2)
 
-        weight3 = tf.Variable(tf.random_normal([3, 3, 128, 128]))
+        weight3 = tf.Variable(tf.random_normal([3, 3, 64, 128]))
         bias3 = tf.Variable(tf.random_normal([128]))
         conv3 = self.conv2d(max_pool2, filter=weight3, strides=[1, 2, 2, 1])
         relu3 = self.relu(tf.add(conv3, bias3))
