@@ -45,6 +45,8 @@ reader = ReadData(args.training_csv, args.embedding,
 
 print('Reading Validation data.')
 val_x, val_y = reader.read_all_val()
+if args.model_name.startswith('cnn'):
+    val_x = np.reshape(val_x, (val_x.shape[0], timesteps, embed_size, 1))
 
 with tf.name_scope('Model'):
     prediction = model.model(x)
@@ -99,7 +101,8 @@ with tf.Session() as sess:
                 i = end
 
                 epoch_x, epoch_y = reader.get_next_batch(start, end)
-                epoch_x = np.reshape(epoch_x, (epoch_x.shape[0], timesteps, embed_size, 1))
+                if args.model_name.startswith('cnn'):
+                    epoch_x = np.reshape(epoch_x, (epoch_x.shape[0], timesteps, embed_size, 1))
                 _, c, summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={x: epoch_x, y:epoch_y})
                 train_summary_writer.add_summary(summary, epoch*no_batches+batch_num)
 
@@ -115,8 +118,8 @@ with tf.Session() as sess:
 
         val_summary_writer.add_summary(val_summary, epoch)
 
-        val_loss = cost_func.eval({x: np.reshape(val_x, (val_x.shape[0], timesteps, embed_size, 1)), y: val_y})
-        val_acc = accuracy.eval({x: np.reshape(val_x, (val_x.shape[0], timesteps, embed_size, 1)), y: val_y})
+        val_loss = cost_func.eval({x: val_x, y: val_y})
+        val_acc = accuracy.eval({x: val_x, y: val_y})
         print("Val Loss: {} Val Accuracy: {}".format(val_loss, val_acc))
         print('------------------------------------------------------------')
 
