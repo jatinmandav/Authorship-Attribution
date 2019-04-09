@@ -10,8 +10,8 @@ class BiLSTMModel:
     def model(self, x):
         x = tf.unstack(x, self.timesteps, 1)
 
-        forward_lstm = rn.BasicLSTMCell(self.hidden_states)
-        backward_lstm = rn.BasicLSTMCell(self.hidden_states)
+        forward_lstm = rnn.BasicLSTMCell(self.hidden_states)
+        backward_lstm = rnn.BasicLSTMCell(self.hidden_states)
 
         rnn_output, f_states, b_states = tf.nn.static_bidirectional_rnn(forward_lstm, backward_lstm, x, dtype=tf.float32)
         rnn_output = tf.nn.relu(rnn_output[-1])
