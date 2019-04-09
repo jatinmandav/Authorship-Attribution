@@ -1,6 +1,8 @@
 from tf_models.lstm import LSTMModel
+from tf_models.lstm_attention import AttentionLSTMModel
 from tf_models.conv import ConvModel
 from tf_models.convlstm import ConvLSTMModel
+from tf_models.bidirectional_lstm import BiLSTMModel
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm_notebook, tqdm
@@ -11,7 +13,7 @@ from ReadData import ReadData
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm]', required=True)
+parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm, bilstm]', required=True)
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
 parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "embeddings/skipgram-100/skipgram.bin"', default='embeddings/skipgram-100/skipgram.bin')
 parser.add_argument('--n_classes', '-n', help='No of classes to predict | Default: 2', default=2, type=int)
@@ -35,6 +37,19 @@ if args.model == 'lstm':
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = LSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
+
+elif args.model == 'bilstm':
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    y = tf.placeholder("float", [None, classes], name='Label')
+
+    model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
+
+elif args.model.startswith('attention'):
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    y = tf.placeholder("float", [None, classes], name='Label')
+
+    model = AttentionLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps, attention_size=64)
+
 elif args.model.startswith('cnn'):
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -56,7 +71,8 @@ with tf.name_scope('Model'):
     prediction = model.model(x)
 
 with tf.name_scope('Loss'):
-    cost_func = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y))
+    crossent = tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y)
+    cost_func = (tf.reduce_mean(crossent))/args.batch_size
 
 with tf.name_scope('Optimizer'):
     optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate).minimize(cost_func)
