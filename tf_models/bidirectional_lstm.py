@@ -16,7 +16,7 @@ class BiLSTMModel:
         rnn_output, f_states, b_states = tf.nn.static_bidirectional_rnn(forward_lstm, backward_lstm, x, dtype=tf.float32)
         rnn_output = tf.nn.relu(rnn_output[-1])
 
-        weights1 = tf.Variable(tf.random_normal([self.hidden_states, 512]))
+        weights1 = tf.Variable(tf.random_normal([2*self.hidden_states, 512]))
         biases1 = tf.Variable(tf.random_normal([512]))
         output1 = tf.add(tf.matmul(rnn_output, weights1), biases1)
         output1 = tf.nn.relu(output1)
