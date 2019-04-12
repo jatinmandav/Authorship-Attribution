@@ -1,37 +1,36 @@
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn as bi_rnn
+from tensorflow.python.ops import array_ops as tf_array_ops
 
 class Attention:
-    def __init__(self):
-        pass
+    def __init__(self, attention_size):
+        self.attention_size = attention_size
 
-    def layer1(self, x, hidden_size, timesteps):
-        fw_out, bw_out = x
+    def layer1(self, x, hidden_states):
+        x = tf_array_ops.transpose(x, [1, 0, 2])
+        shape = x.get_shape()
+        w1 = tf.Variable(tf.random_normal([hidden_states, self.attention_size], stddev=0.1))
+        w2 = tf.Variable(tf.random_normal([self.attention_size], stddev=0.1))
+        w3 = tf.Variable(tf.random_normal([self.attention_size], stddev=0.1))
 
-        W = tf.Variable(tf.random_normal([hidden_size], stddev=0.1))
-        H = fw_out + bw_out
-        M = tf.tanh(H)
+        v = tf.tanh(tf.tensordot(x, w1, axes=1) + w2)
+        vu = tf.tensordot(v, w3, axes=1)
 
-        alpha = tf.nn.softmax(tf.reshape(tf.matmul(tf.reshape(M, [-1, hidden_size]),
-                                                         tf.reshape(W, [-1, 1])),
-                                                (-1, timesteps)))
+        alphas = tf.nn.softmax(vu)
 
-        r = tf.matmul(tf.transpose(H, [0, 2, 1]),
-                      tf.reshape(alpha, [-1, timesteps, 1]))
+        out = tf.reduce_mean(x*tf.expand_dims(alphas, -1), 1)
 
-        r = tf.squeeze(r)
-        h_star = tf.tanh(r)
-
-        return h_star
-
+        return out
 
 class BiLSTMModel:
-    def __init__(self, hidden_states=0, no_classes=0, timesteps=0):
+    def __init__(self, hidden_states=0, no_classes=0, timesteps=0, attention_size=0, use_attention=False):
         self.hidden_states = hidden_states
         self.no_classes = no_classes
         self.timesteps = timesteps
-        self.attention = Attention()
+        self.attention = None
+
+        if use_attention:
+            self.attention = Attention(attention_size)
 
     def model(self, x):
         x = tf.unstack(x, self.timesteps, 1)
@@ -40,16 +39,19 @@ class BiLSTMModel:
         backward_lstm = rnn.BasicLSTMCell(self.hidden_states)
 
         rnn_output, f_states, b_states = tf.nn.static_bidirectional_rnn(forward_lstm, backward_lstm, x, dtype=tf.float32)
-        rnn_output = tf.nn.tanh(rnn_output[-1])
+        #rnn_output = tf.nn.tanh(rnn_output[-1])
 
-        #attention = self.attention.layer1([f_states, b_states], self.hidden_states, self.timesteps)
+        if not self.attention == None:
+            rnn_output = tf.convert_to_tensor(rnn_output)
+            rnn_output = tf.tanh(rnn_output)
+            attention = self.attention.layer1(rnn_output, 2*self.hidden_states)
+            print(attention.get_shape())
+            bilstm_out = attention
+        else:
+            rnn_output = tf.tanh(rnn_output[-1])
+            bilstm_out = rnn_output
 
-        '''weights1 = tf.Variable(tf.random_normal([2*self.hidden_states, 512]))
-        biases1 = tf.Variable(tf.random_normal([512]))
-        output1 = tf.add(tf.matmul(rnn_output, weights1), biases1)
-        output1 = tf.nn.relu(output1)'''
-
-        output1 = tf.nn.dropout(rnn_output, 0.75)
+        output1 = tf.nn.dropout(bilstm_out, 0.5)
 
         weights2 = tf.Variable(tf.random_normal([2*self.hidden_states, self.no_classes]))
         biases2 = tf.Variable(tf.random_normal([self.no_classes]))

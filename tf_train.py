@@ -1,10 +1,7 @@
 from tf_models.lstm import LSTMModel
-from tf_models.lstm_attention import AttentionLSTMModel
 from tf_models.conv import ConvModel
 from tf_models.convlstm import ConvLSTMModel
 from tf_models.bidirectional_lstm import BiLSTMModel
-
-from tf_models.exp_model import CNNAtLSTM
 
 import tensorflow as tf
 import numpy as np
@@ -28,14 +25,18 @@ parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default
 parser.add_argument('--steps', '-st', help='How many steps to Train? | Default: 100000', default=100000, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
 parser.add_argument('--no_samples', '-ns', help='How many samples to train on? | Default: 1000', default=1000, type=int)
-parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.00001', default=0.00001, type=float)
+parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.01', default=0.01, type=float)
 parser.add_argument('--lr_change', '-clr', help='How often should the learning rate be increased? | Default: 10000', default=10000, type=int)
 parser.add_argument('--logs', '-l', help="Where should the trained model be saved? | Default: logs", default='logs')
 parser.add_argument('--data_overlap', '-ol', help="What percent of data should overlap with each batch? | Default: 0.2", default=0.2, type=float)
+parser.add_argument('--use_attention', '-att', help="Whether to use Attetion layer or not? | Default: False", action="store_true")
+parser.add_argument('--attention_size', '-ats', help="What should be the size of attention layer? | Default: 64", default=64, type=int)
 
 args = parser.parse_args()
 
 classes = args.n_classes
+
+attention_size = args.attention_size
 
 if args.model == 'lstm':
     timesteps = 75
@@ -45,7 +46,8 @@ if args.model == 'lstm':
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
-    model = LSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
+    model = LSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps,
+                      attention_size=attention_size, use_attention=args.use_attention)
 
 elif args.model == 'bilstm':
     timesteps = 75
@@ -55,31 +57,22 @@ elif args.model == 'bilstm':
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
-    model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
-
-elif args.model.startswith('attention'):
-    timesteps = 75
-    embed_size = 101
-    hidden_states = 2*embed_size
-
-    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
-    y = tf.placeholder("float", [None, classes], name='Label')
-
-    model = AttentionLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps, attention_size=64)
+    model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps,
+                        attention_size=attention_size, use_attention=args.use_attention)
 
 elif args.model.startswith('cnn'):
     timesteps = 75
     embed_size = 101
     hidden_states = 2*embed_size
+
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
-    model = CNNAtLSTM(hidden_states, classes)
-
-    '''if args.model.endswith('lstm'):
-        model = ConvLSTMModel(hidden_states, classes)
+    if args.model.endswith('lstm'):
+        model = ConvLSTMModel(hidden_states, classes, attention_size=attention_size,
+                              use_attention=args.use_attention)
     else:
-        model = ConvModel(classes)'''
+        model = ConvModel(classes)
 
 reader = ReadData(args.training_csv, args.embedding,
                   batch_size=args.batch_size, no_samples=args.no_samples,
@@ -165,7 +158,8 @@ with tf.Session() as sess:
                 if step > updation_step:
                     updation_step += args.lr_change
                     if learning_rate < 1.0:
-                        learning_rate = learning_rate*10
+                        learning_rate = learning_rate/10
+                        print('LR: ', learning_rate)
 
                 a = accuracy.eval({x: epoch_x, y: epoch_y})
                 loss.append(c)

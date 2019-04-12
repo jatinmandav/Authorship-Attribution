@@ -1,7 +1,8 @@
 import tensorflow as tf
+from tensorflow.python.ops import array_ops as tf_array_ops
 
 class ConvModel:
-    def __init__(self, no_classes):
+    def __init__(self, no_classes, use_attention=False):
         self.no_classes = no_classes
 
     def conv2d(self, x, filter, strides, padding='SAME'):
@@ -39,14 +40,11 @@ class ConvModel:
         #max_pool3 = self.batch_normalization(max_pool3)
 
         flatten = tf.reshape(max_pool3, [-1, 2*2*128])
+        conv_out = flatten
 
-        weight4 = tf.Variable(tf.random_normal([2*2*128, 512]))
-        bias4 = tf.Variable(tf.random_normal([512]))
-        dense1 = tf.add(tf.matmul(flatten, weight4), bias4)
+        dropout1 = self.dropout(conv_out, 0.5)
 
-        dropout1 = self.dropout(dense1, 0.8)
-
-        weight5 = tf.Variable(tf.random_normal([512, self.no_classes]))
+        weight5 = tf.Variable(tf.random_normal([4*128, self.no_classes]))
         bias5 = tf.Variable(tf.random_normal([self.no_classes]))
         dense2 = tf.add(tf.matmul(dropout1, weight5), bias5)
 
