@@ -42,7 +42,7 @@ if args.model == 'lstm':
     embed_size = 101
     hidden_states = 2*embed_size
 
-    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = LSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
@@ -52,7 +52,7 @@ elif args.model == 'bilstm':
     embed_size = 101
     hidden_states = embed_size
 
-    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
@@ -62,7 +62,7 @@ elif args.model.startswith('attention'):
     embed_size = 101
     hidden_states = 2*embed_size
 
-    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = AttentionLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps, attention_size=64)
@@ -70,7 +70,7 @@ elif args.model.startswith('attention'):
 elif args.model.startswith('cnn'):
     timesteps = 75
     embed_size = 101
-    hidden_states = embed_size
+    hidden_states = 2*embed_size
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
@@ -95,8 +95,8 @@ with tf.name_scope('Model'):
 
 with tf.name_scope('Loss'):
     crossent = tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y)
-    cost_func = (tf.reduce_mean(crossent))/args.batch_size
-    #cost_func = tf.reduce_mean(crossent)
+    #cost_func = (tf.reduce_mean(crossent))/args.batch_size
+    cost_func = tf.reduce_mean(crossent)
 
 lr = tf.placeholder('float', [])
 learning_rate = args.learning_rate
