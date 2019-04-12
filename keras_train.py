@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import numpy as np
 import argparse
+from tqdm import tqdm
 
 from keras.optimizers import Adam, RMSprop, SGD
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
@@ -49,7 +50,7 @@ parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnl
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
 parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "embeddings/skipgram-100/skipgram.bin"', default='embeddings/skipgram-100/skipgram.bin')
 parser.add_argument('--n_classes', '-n', help='No of classes to predict | Default: 2', default=2, type=int)
-parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "Adam"', default='adam')
+parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "RMSprop"', default='rmsprop')
 parser.add_argument('--batch_size', '-b', help='What should be the batch size? | Default: 32', default=32, type=int)
 parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 100', default=100, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
@@ -59,7 +60,7 @@ args = parser.parse_args()
 
 model_list = {'lstm': LSTMModel, 'cnn': CNNModel, 'cnnlstm': CNNLSTMModel}
 
-input_shape = (100, 101)
+input_shape = (75, 101)
 n_classes = args.n_classes
 
 model = model_list[args.model](input_shape=input_shape, output_shape=n_classes)
@@ -110,11 +111,22 @@ reader = ReadData(args.training_csv, args.embedding,
                   batch_size=args.batch_size, no_samples=args.no_samples,
                   train_val_split=args.train_val_split)
 
-train_x, train_y = reader.read_all_train()
+#train_x, train_y = reader.read_all_train()
 val_x, val_y = reader.read_all_val()
 
-model.fit(x=train_x, y=train_y, batch_size=args.batch_size, epochs=args.epochs,
-          validation_data=(val_x, val_y), callbacks=[logging, reduce_lr, earlystopper, checkpoint])
+for epoch in range(args.epochs):
+    i = 0
+    no_batches = int(reader.train_size/args.batch_size)
+    for _ in tqdm(range(no_batches)):
+        start = i
+        end = i+args.batch_size
+        i = end
+        epoch_x, epoch_y = reader.get_next_batch(start, end)
+        model.train_on_batch(epoch_x, epoch_y)
+        #model.fit(x=epoch_x, y=epoch_y, batch_size=args.batch_size, epochs=1,
+        #          validation_data=(val_x, val_y), callbacks=[logging, reduce_lr, earlystopper, checkpoint])
+    print(model.metrics_names)
+    print(model.evaluate(val_x, val_y))
 
 '''
 train_generator = reader.generate_train_batch()

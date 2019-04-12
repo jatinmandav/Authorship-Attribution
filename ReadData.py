@@ -99,7 +99,7 @@ class ReadData:
         no_batches = int(len(self.val['Post'])/self.batch_size)
         while True:
             start_index = 0
-            for i in range(no_batches-1):
+            for i in range(no_batches):
                 vectors = []
                 labels = []
                 j = start_index
@@ -132,7 +132,7 @@ class ReadData:
         no_batches = int(len(self.train['Post'])/self.batch_size)
         while True:
             start_index = 0
-            for i in range(no_batches-1):
+            for i in range(no_batches):
                 vectors = []
                 labels = []
                 j = start_index

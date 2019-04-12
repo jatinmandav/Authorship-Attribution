@@ -3,10 +3,15 @@ from tf_models.lstm_attention import AttentionLSTMModel
 from tf_models.conv import ConvModel
 from tf_models.convlstm import ConvLSTMModel
 from tf_models.bidirectional_lstm import BiLSTMModel
+
+from tf_models.exp_model import CNNAtLSTM
+
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm_notebook, tqdm
 import os
+
+import tensorflow.contrib.slim as slim
 
 from ReadData import ReadData
 
@@ -20,43 +25,61 @@ parser.add_argument('--n_classes', '-n', help='No of classes to predict | Defaul
 parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "Adam"', default='adam')
 parser.add_argument('--batch_size', '-b', help='What should be the batch size? | Default: 32', default=32, type=int)
 parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 100', default=100, type=int)
+parser.add_argument('--steps', '-st', help='How many steps to Train? | Default: 100000', default=100000, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
 parser.add_argument('--no_samples', '-ns', help='How many samples to train on? | Default: 1000', default=1000, type=int)
-parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.001', default=0.001, type=float)
+parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.00001', default=0.00001, type=float)
+parser.add_argument('--lr_change', '-clr', help='How often should the learning rate be increased? | Default: 10000', default=10000, type=int)
 parser.add_argument('--logs', '-l', help="Where should the trained model be saved? | Default: logs", default='logs')
+parser.add_argument('--data_overlap', '-ol', help="What percent of data should overlap with each batch? | Default: 0.2", default=0.2, type=float)
 
 args = parser.parse_args()
 
-hidden_states = 1024
 classes = args.n_classes
-timesteps = 75
-embed_size = 101
 
 if args.model == 'lstm':
-    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    timesteps = 75
+    embed_size = 101
+    hidden_states = 2*embed_size
+
+    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = LSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
 
 elif args.model == 'bilstm':
-    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    timesteps = 75
+    embed_size = 101
+    hidden_states = embed_size
+
+    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
 
 elif args.model.startswith('attention'):
-    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    timesteps = 75
+    embed_size = 101
+    hidden_states = 2*embed_size
+
+    x = tf.placeholder("float", [None, timesteps, hidden_states], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
 
     model = AttentionLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps, attention_size=64)
 
 elif args.model.startswith('cnn'):
+    timesteps = 75
+    embed_size = 101
+    hidden_states = embed_size
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
-    if args.model.endswith('lstm'):
+
+    model = CNNAtLSTM(hidden_states, classes)
+
+    '''if args.model.endswith('lstm'):
         model = ConvLSTMModel(hidden_states, classes)
     else:
-        model = ConvModel(classes)
+        model = ConvModel(classes)'''
 
 reader = ReadData(args.training_csv, args.embedding,
                   batch_size=args.batch_size, no_samples=args.no_samples,
@@ -73,9 +96,12 @@ with tf.name_scope('Model'):
 with tf.name_scope('Loss'):
     crossent = tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y)
     cost_func = (tf.reduce_mean(crossent))/args.batch_size
+    #cost_func = tf.reduce_mean(crossent)
 
+lr = tf.placeholder('float', [])
+learning_rate = args.learning_rate
 with tf.name_scope('Optimizer'):
-    optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate).minimize(cost_func)
+    optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(cost_func)
 
 with tf.name_scope('Accuracy'):
     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
@@ -100,6 +126,9 @@ tf.summary.scalar('loss', cost_func)
 tf.summary.scalar('accuracy', accuracy)
 merged_summary_op = tf.summary.merge_all()
 
+model_vars = tf.trainable_variables()
+slim.model_analyzer.analyze_vars(model_vars, print_info=True)
+
 prev_val_loss = float('inf')
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -114,17 +143,29 @@ with tf.Session() as sess:
 
         loss = []
         acc = []
+        updation_step = args.steps/2
         with tqdm(total=no_batches, desc="Epoch {}/{}: loss: {} acc: {}".format(epoch + 1, args.epochs, loss, acc)) as pbar:
             for batch_num in range(no_batches):
                 start = i
                 end = i + args.batch_size
-                i = end
+                i = start + int(args.batch_size*(1-args.data_overlap))
+
+                step = epoch*no_batches+batch_num
 
                 epoch_x, epoch_y = reader.get_next_batch(start, end)
                 if args.model.startswith('cnn'):
                     epoch_x = np.reshape(epoch_x, (epoch_x.shape[0], timesteps, embed_size, 1))
-                _, c, summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={x: epoch_x, y:epoch_y})
-                train_summary_writer.add_summary(summary, epoch*no_batches+batch_num)
+
+                _, c, summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={lr: args.learning_rate, x: epoch_x, y:epoch_y})
+                train_summary_writer.add_summary(summary, step)
+
+                val_loss, val_acc, val_summary = sess.run([cost_func, accuracy, merged_summary_op], feed_dict={x: val_x, y:val_y})
+                val_summary_writer.add_summary(val_summary, step)
+
+                if step > updation_step:
+                    updation_step += args.lr_change
+                    if learning_rate < 1.0:
+                        learning_rate = learning_rate*10
 
                 a = accuracy.eval({x: epoch_x, y: epoch_y})
                 loss.append(c)
@@ -134,9 +175,8 @@ with tf.Session() as sess:
                 pbar.update(1)
 
         print('------------------------------------------------------------')
-        val_loss, val_acc, val_summary = sess.run([cost_func, accuracy, merged_summary_op], feed_dict={x: epoch_x, y:epoch_y})
-
-        val_summary_writer.add_summary(val_summary, epoch)
+        #val_loss, val_acc, val_summary = sess.run([cost_func, accuracy, merged_summary_op], feed_dict={x: val_x, y:val_y})
+        #val_summary_writer.add_summary(val_summary, epoch)
 
         val_loss = cost_func.eval({x: val_x, y: val_y})
         val_acc = accuracy.eval({x: val_x, y: val_y})

@@ -8,13 +8,16 @@ import keras.backend as K
 
 def LSTMModel(input_shape, output_shape):
     model = Sequential()
-    model.add(LSTM(512, input_shape=input_shape))
-    model.add(RepeatVector(input_shape[0]))
-    model.add(LSTM(512))
+    model.add(LSTM(256, input_shape=input_shape, return_sequences=True))
+    model.add(LSTM(256))
+
+
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(output_shape, activation='softmax'))
 
     return model
 
 if __name__ == "__main__":
-    model = LSTMModel((100,101), 2)
+    model = LSTMModel((75,101), 2)
     model.summary()
