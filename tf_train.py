@@ -25,7 +25,7 @@ parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default
 parser.add_argument('--steps', '-st', help='How many steps to Train? | Default: 100000', default=100000, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
 parser.add_argument('--no_samples', '-ns', help='How many samples to train on? | Default: 1000', default=1000, type=int)
-parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.01', default=0.01, type=float)
+parser.add_argument('--learning_rate', '-lr', help='What should be the learning rate? | Default: 0.00001', default=0.00001, type=float)
 parser.add_argument('--lr_change', '-clr', help='How often should the learning rate be increased? | Default: 10000', default=10000, type=int)
 parser.add_argument('--logs', '-l', help="Where should the trained model be saved? | Default: logs", default='logs')
 parser.add_argument('--data_overlap', '-ol', help="What percent of data should overlap with each batch? | Default: 0.2", default=0.2, type=float)
@@ -41,7 +41,7 @@ attention_size = args.attention_size
 if args.model == 'lstm':
     timesteps = 75
     embed_size = 101
-    hidden_states = 2*embed_size
+    hidden_states = 256
 
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -52,7 +52,7 @@ if args.model == 'lstm':
 elif args.model == 'bilstm':
     timesteps = 75
     embed_size = 101
-    hidden_states = embed_size
+    hidden_states = 256
 
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -63,7 +63,7 @@ elif args.model == 'bilstm':
 elif args.model.startswith('cnn'):
     timesteps = 75
     embed_size = 101
-    hidden_states = 2*embed_size
+    hidden_states = 256
 
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -94,7 +94,7 @@ with tf.name_scope('Loss'):
 lr = tf.placeholder('float', [])
 learning_rate = args.learning_rate
 with tf.name_scope('Optimizer'):
-    optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(cost_func)
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=lr).minimize(cost_func)
 
 with tf.name_scope('Accuracy'):
     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
@@ -136,7 +136,7 @@ with tf.Session() as sess:
 
         loss = []
         acc = []
-        updation_step = args.steps/2
+        updation_step = args.lr_change*2
         with tqdm(total=no_batches, desc="Epoch {}/{}: loss: {} acc: {}".format(epoch + 1, args.epochs, loss, acc)) as pbar:
             for batch_num in range(no_batches):
                 start = i
@@ -149,8 +149,8 @@ with tf.Session() as sess:
                 if args.model.startswith('cnn'):
                     epoch_x = np.reshape(epoch_x, (epoch_x.shape[0], timesteps, embed_size, 1))
 
-                _, c, summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={lr: args.learning_rate, x: epoch_x, y:epoch_y})
-                train_summary_writer.add_summary(summary, step)
+                _, c, train_summary = sess.run([optimizer, cost_func, merged_summary_op], feed_dict={lr: args.learning_rate, x: epoch_x, y:epoch_y})
+                train_summary_writer.add_summary(train_summary, step)
 
                 val_loss, val_acc, val_summary = sess.run([cost_func, accuracy, merged_summary_op], feed_dict={x: val_x, y:val_y})
                 val_summary_writer.add_summary(val_summary, step)
@@ -158,7 +158,7 @@ with tf.Session() as sess:
                 if step > updation_step:
                     updation_step += args.lr_change
                     if learning_rate < 1.0:
-                        learning_rate = learning_rate/10
+                        learning_rate = learning_rate*2.5
                         print('LR: ', learning_rate)
 
                 a = accuracy.eval({x: epoch_x, y: epoch_y})

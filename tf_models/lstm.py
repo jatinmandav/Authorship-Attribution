@@ -45,11 +45,11 @@ class LSTMModel:
 
         if not self.attention == None:
             rnn_output = tf.convert_to_tensor(rnn_output)
-            rnn_output = tf.tanh(rnn_output)
+            rnn_output = tf.nn.leaky_relu(rnn_output)
             attention = self.attention.layer1(rnn_output, self.hidden_states)
             lstm_out = attention
         else:
-            rnn_output = tf.tanh(rnn_output[-1])
+            rnn_output = tf.nn.leaky_relu(rnn_output[-1])
             lstm_out = rnn_output
 
         output1 = tf.nn.dropout(lstm_out, 0.5)
@@ -57,6 +57,7 @@ class LSTMModel:
         weights2 = tf.Variable(tf.random_normal([self.hidden_states, self.no_classes]))
         biases2 = tf.Variable(tf.random_normal([self.no_classes]))
         output2 = tf.add(tf.matmul(output1, weights2), biases2)
+        #output2 = tf.nn.sigmoid(output2)
 
         return output2
 
