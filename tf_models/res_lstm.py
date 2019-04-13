@@ -32,30 +32,18 @@ class ResLSTM:
         if use_attention:
             self.attention = Attention(attention_size)
 
-    def residual_block(self, x, block_num, hidden_1, hidden_2):
+    def residual_block(self, x, block_num, hidden):
         x = tf.unstack(x, self.timesteps, 1)
-        print(type(x), type(x[0]))
-        print(x[0].get_shape())
 
-        with tf.variable_scope('fw_lstm{}'.format(block_num), reuse=True):
-            forward_lstm1 = rnn.BasicLSTMCell(hidden_1, name='fw_lstm{}'.format(block_num))
-        with tf.variable_scope('bw_lstm{}'.format(block_num), reuse=True):
-            backward_lstm1 = rnn.BasicLSTMCell(hidden_1, name='bw_lstm{}'.format(block_num))
-
-        rnn_output1, f_states, b_states = tf.nn.static_bidirectional_rnn(forward_lstm1, backward_lstm1,
-                                                                         x, dtype=tf.float32)
+        with tf.variable_scope('lstm{}'.format(block_num), reuse=True):
+            lstm1 = rnn.BasicLSTMCell(hidden, forget_bias=1.0, name='lstm{}'.format(block_num))
+        rnn_output1, states = tf.nn.static_rnn(lstm1, x, dtype=tf.float32)
 
         res1 = tf_array_ops.transpose(rnn_output1, [1, 0, 2])
-        print(type(rnn_output1), type(rnn_output1[0]))
-        print(rnn_output1[0].get_shape())
 
-        with tf.variable_scope('fw_lstm{}'.format(block_num+1), reuse=True):
-            forward_lstm2 = rnn.BasicLSTMCell(hidden_2, name='fw_lstm{}'.format(block_num+1))
-        with tf.variable_scope('bw_lstm{}'.format(block_num+1), reuse=True):
-            backward_lstm2 = rnn.BasicLSTMCell(hidden_2, name='bw_lstm{}'.format(block_num+1))
-
-        rnn_output2, f_states, b_states = tf.nn.static_bidirectional_rnn(forward_lstm2, backward_lstm2,
-                                                                         rnn_output1, dtype=tf.float32)
+        with tf.variable_scope('lstm{}'.format(block_num+1), reuse=True):
+            lstm2 = rnn.BasicLSTMCell(hidden, forget_bias=1.0, name='lstm{}'.format(block_num+1))
+        rnn_output2, states = tf.nn.static_rnn(lstm2, rnn_output1, dtype=tf.float32)
 
         res2 = tf_array_ops.transpose(rnn_output2, [1, 0, 2])
         res_link = tf.concat([res1, res2], 2)
@@ -66,9 +54,9 @@ class ResLSTM:
         return res1, res2, res_link
 
     def model(self, x):
-        res1, res2, res_link1 = self.residual_block(x, 1, 16, 32)
+        res1, res2, res_link1 = self.residual_block(x, 1, 64)
         print('-----', res1.get_shape(), res2.get_shape(), res_link1.get_shape())
-        res3, res4, res_link2 = self.residual_block(res_link1, 3, 32, 64)
+        res3, res4, res_link2 = self.residual_block(res_link1, 3, 128)
         print('-----', res3.get_shape(), res4.get_shape(), res_link2.get_shape())
 
         res_link3 = tf.concat([res_link1, res_link2], 2)
