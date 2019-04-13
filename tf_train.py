@@ -3,6 +3,8 @@ from tf_models.conv import ConvModel
 from tf_models.convlstm import ConvLSTMModel
 from tf_models.bidirectional_lstm import BiLSTMModel
 
+from tf_models.res_lstm import ResLSTM
+
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm_notebook, tqdm
@@ -59,6 +61,17 @@ elif args.model == 'bilstm':
 
     model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps,
                         attention_size=attention_size, use_attention=args.use_attention)
+
+if args.model == 'res_lstm':
+    timesteps = 75
+    embed_size = 101
+    hidden_states = 128
+
+    x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
+    y = tf.placeholder("float", [None, classes], name='Label')
+
+    model = ResLSTM(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps,
+                      attention_size=attention_size, use_attention=args.use_attention)
 
 elif args.model.startswith('cnn'):
     timesteps = 75
