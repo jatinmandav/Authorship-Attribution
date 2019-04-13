@@ -61,7 +61,7 @@ class ResLSTM:
         res_link3 = tf.unstack(res_link3, self.timesteps, 1)
 
         with tf.variable_scope('lstm{}'.format(5), reuse=True):
-            lstm5 = rnn.BasicLSTMCell(hidden, forget_bias=1.0, name='lstm{}'.format(5))
+            lstm5 = rnn.BasicLSTMCell(self.hidden_states, forget_bias=1.0, name='lstm{}'.format(5))
         reslstm_out, states = tf.nn.static_rnn(lstm5, res_link3, dtype=tf.float32)
 
         if not self.attention == None:
