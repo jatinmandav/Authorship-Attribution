@@ -81,14 +81,3 @@ class ResLSTM:
         output2 = tf.add(tf.matmul(output1, weights2), biases2)
 
         return output2
-
-if __name__ == "__main__":
-    hidden_states = 512
-    classes = 2
-    timesteps = 1
-    embed_size = 100
-    x = tf.placeholder("float", [None, timesteps, embed_size])
-    y = tf.placeholder("float", [None, classes])
-
-    model = BiLSTMModel(hidden_states=hidden_states, no_classes=classes, timesteps=timesteps)
-    model = model.model(x)

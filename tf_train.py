@@ -19,6 +19,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm, bilstm]', required=True)
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
+parser.add_argument('--classes', '-c', help='Which model to train? ["Gender", "Age_Group", "Profession"]', required=True)
 parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "embeddings/skipgram-100/skipgram.bin"', default='embeddings/skipgram-100/skipgram.bin')
 parser.add_argument('--n_classes', '-n', help='No of classes to predict | Default: 2', default=2, type=int)
 parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "Adam"', default='adam')
@@ -33,6 +34,7 @@ parser.add_argument('--logs', '-l', help="Where should the trained model be save
 parser.add_argument('--data_overlap', '-ol', help="What percent of data should overlap with each batch? | Default: 0.2", default=0.2, type=float)
 parser.add_argument('--use_attention', '-att', help="Whether to use Attetion layer or not? | Default: False", action="store_true")
 parser.add_argument('--attention_size', '-ats', help="What should be the size of attention layer? | Default: 64", default=64, type=int)
+parser.add_argument('--hidden_states', '-hds', help="How many hidden states on LSTM? | Default: 256", default=256, type=int)
 
 args = parser.parse_args()
 
@@ -43,7 +45,7 @@ attention_size = args.attention_size
 if args.model == 'lstm':
     timesteps = 75
     embed_size = 101
-    hidden_states = 256
+    hidden_states = args.hidden_states
 
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -54,7 +56,7 @@ if args.model == 'lstm':
 elif args.model == 'bilstm':
     timesteps = 75
     embed_size = 101
-    hidden_states = 256
+    hidden_states = args.hidden_states
 
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -65,7 +67,7 @@ elif args.model == 'bilstm':
 if args.model == 'res_lstm':
     timesteps = 75
     embed_size = 101
-    hidden_states = 128
+    hidden_states = args.hidden_states
 
     x = tf.placeholder("float", [None, timesteps, embed_size], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -76,7 +78,7 @@ if args.model == 'res_lstm':
 elif args.model.startswith('cnn'):
     timesteps = 75
     embed_size = 101
-    hidden_states = 256
+    hidden_states = args.hidden_states
 
     x = tf.placeholder("float", [None, timesteps, embed_size, 1], name='InputData')
     y = tf.placeholder("float", [None, classes], name='Label')
@@ -87,7 +89,7 @@ elif args.model.startswith('cnn'):
     else:
         model = ConvModel(classes)
 
-reader = ReadData(args.training_csv, args.embedding,
+reader = ReadData(args.training_csv, args.embedding, args.classes,
                   batch_size=args.batch_size, no_samples=args.no_samples,
                   train_val_split=args.train_val_split)
 
@@ -106,6 +108,7 @@ with tf.name_scope('Loss'):
 
 lr = tf.placeholder('float', [])
 learning_rate = args.learning_rate
+
 with tf.name_scope('Optimizer'):
     optimizer = tf.train.RMSPropOptimizer(learning_rate=lr).minimize(cost_func)
 
@@ -113,15 +116,17 @@ with tf.name_scope('Accuracy'):
     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
-if not os.path.exists(args.logs):
-    os.mkdir(args.logs)
+log_dir = args.logs + '_' + args.model + '_' + args.classes
+
+if not os.path.exists(log_dir):
+    os.mkdir(log_dir)
 
 saver = tf.train.Saver()
-weights_path = os.path.join(args.logs, 'weights')
+weights_path = os.path.join(log_dir, 'weights')
 if not os.path.exists(weights_path):
     os.mkdir(weights_path)
 
-tensorboard_path = os.path.join(args.logs, 'tensorboard')
+tensorboard_path = os.path.join(log_dir, 'tensorboard')
 if not os.path.exists(tensorboard_path):
     os.mkdir(tensorboard_path)
 
@@ -136,6 +141,9 @@ model_vars = tf.trainable_variables()
 slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
 prev_val_loss = float('inf')
+
+print('Training on {} Training samples and {} Validation samples'.format(reader.train_size, reader.val_size))
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 

@@ -5,24 +5,25 @@ import pandas as pd
 import numpy as np
 
 class ReadData:
-    def __init__(self, path_csv, embedding_model, batch_size=32, no_samples=10000, train_val_split=0.1):
+    def __init__(self, path_csv, embedding_model, classes, batch_size=32, no_samples=10000, train_val_split=0.1):
         self.text2vec = Text2Vector(embedding_model, size=(75, 101))
         self.data = pd.read_csv(path_csv, sep="|")
         self.data = self.data.sample(frac=1).reset_index(drop=True)
         self.data = self.data.sample(frac=1).reset_index(drop=True).head(no_samples)
         self.data_size = len(self.data)
 
-        #print(self.data.head())
-
-        #exit()
         self.train = self.data.head(int(self.data_size*(1-train_val_split))).reset_index(drop=True)
         self.train_size = len(self.train)
         self.val = self.data.tail(int(self.data_size*train_val_split)).reset_index(drop=True)
         self.val_size = len(self.val)
 
-        #self.classes = ['male10', 'male20', 'male30', 'female10', 'female20', 'female30']
-        self.classes = ['male', 'female']
+        self.classes_category = classes
+        self.classes = self.get_classes()
+
         self.batch_size = batch_size
+
+    def get_classes(self):
+        return [class_ for class_ in open(self.classes_category + '.txt', 'r').read().split('\n') if len(class_) > 1]
 
     def get_embedding(self, text):
         return self.text2vec.convert(text)
@@ -35,8 +36,8 @@ class ReadData:
                 if len(str(self.train['Post'][i]).split()) < 15:
                     continue
 
-                #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
-                label = '{}'.format(self.train['Gender'][i])
+                #label = '{}{}'.format(self.val[self.classes_category][j], self.val['Age_Group'][j])
+                label = '{}'.format(self.train[self.classes_category][i])
                 one_hot = np.zeros(len(self.classes))
                 one_hot[self.classes.index(label)] = 1
                 labels.append(one_hot)
@@ -60,8 +61,8 @@ class ReadData:
                 if len(str(self.train['Post'][i]).split()) < 15:
                     continue
 
-                #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
-                label = '{}'.format(self.train['Gender'][i])
+                #label = '{}{}'.format(self.val[self.classes_category][j], self.val['Age_Group'][j])
+                label = '{}'.format(self.train[self.classes_category][i])
                 one_hot = np.zeros(len(self.classes))
                 one_hot[self.classes.index(label)] = 1
                 labels.append(one_hot)
@@ -82,8 +83,8 @@ class ReadData:
             try:
                 if len(str(self.val['Post'][i]).split()) < 15:
                     continue
-                #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
-                label = '{}'.format(self.val['Gender'][i])
+                #label = '{}{}'.format(self.val[self.classes_category][j], self.val['Age_Group'][j])
+                label = '{}'.format(self.val[self.classes_category][i])
                 one_hot = np.zeros(len(self.classes))
                 one_hot[self.classes.index(label)] = 1
                 labels.append(one_hot)
@@ -108,8 +109,8 @@ class ReadData:
                         j += 1
                         continue
                     try:
-                        #label = '{}{}'.format(self.val['Gender'][j], self.val['Age_Group'][j])
-                        label = '{}'.format(self.val['Gender'][j])
+                        #label = '{}{}'.format(self.val[self.classes_category][j], self.val['Age_Group'][j])
+                        label = '{}'.format(self.val[self.classes_category][j])
                         one_hot = np.zeros(len(self.classes))
                         one_hot[self.classes.index(label)] = 1
                         labels.append(one_hot)
@@ -141,8 +142,8 @@ class ReadData:
                         j += 1
                         continue
                     try:
-                        #label = '{}{}'.format(self.train['Gender'][j], self.train['Age_Group'][j])
-                        label = '{}'.format(self.train['Gender'][j])
+                        #label = '{}{}'.format(self.train[self.classes_category][j], self.train['Age_Group'][j])
+                        label = '{}'.format(self.train[self.classes_category][j])
                         one_hot = np.zeros(len(self.classes))
                         one_hot[self.classes.index(label)] = 1
                         labels.append(one_hot)

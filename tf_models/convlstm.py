@@ -93,8 +93,8 @@ class ConvLSTMModel:
             conv_lstm_out = rnn_output
 
 
-        weight5 = tf.Variable(tf.random_normal([self.hidden_states, 2]))
-        bias5 = tf.Variable(tf.random_normal([2]))
+        weight5 = tf.Variable(tf.random_normal([self.hidden_states, self.no_classes]))
+        bias5 = tf.Variable(tf.random_normal([self.no_classes]))
         dense1 = tf.add(tf.matmul(conv_lstm_out, weight5), bias5)
 
         return dense1
