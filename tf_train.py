@@ -21,10 +21,12 @@ parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnl
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
 parser.add_argument('--classes', '-c', help='Which model to train? ["Gender", "Age_Group", "Profession"]', required=True)
 parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "embeddings/skipgram-100/skipgram.bin"', default='embeddings/skipgram-100/skipgram.bin')
+parser.add_argument('--weights', '-w', help='Path to Pre-trained model to continue training')
 parser.add_argument('--n_classes', '-n', help='No of classes to predict | Default: 2', default=2, type=int)
 parser.add_argument('--optimizer', '-o', help='which Optimizer to use? | Default: "Adam"', default='adam')
 parser.add_argument('--batch_size', '-b', help='What should be the batch size? | Default: 32', default=32, type=int)
-parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 100', default=100, type=int)
+parser.add_argument('--epochs', '-ep', help='How many epochs to Train? | Default: 5', default=5, type=int)
+parser.add_argument('--initial_epoch', '-iep', help='Where to continue from? | Default: 0', default=0, type=int)
 parser.add_argument('--steps', '-st', help='How many steps to Train? | Default: 100000', default=100000, type=int)
 parser.add_argument('--train_val_split', '-s', help='What should be the train vs val split fraction? | Default: 0.1', default=0.1, type=float)
 parser.add_argument('--no_samples', '-ns', help='How many samples to train on? | Default: 1000', default=1000, type=int)
@@ -34,7 +36,7 @@ parser.add_argument('--logs', '-l', help="Where should the trained model be save
 parser.add_argument('--data_overlap', '-ol', help="What percent of data should overlap with each batch? | Default: 0.2", default=0.2, type=float)
 parser.add_argument('--use_attention', '-att', help="Whether to use Attetion layer or not? | Default: False", action="store_true")
 parser.add_argument('--attention_size', '-ats', help="What should be the size of attention layer? | Default: 64", default=64, type=int)
-parser.add_argument('--hidden_states', '-hds', help="How many hidden states on LSTM? | Default: 256", default=256, type=int)
+parser.add_argument('--hidden_states', '-hds', help="How many hidden states on LSTM? | Default: 128", default=128, type=int)
 
 args = parser.parse_args()
 
@@ -111,27 +113,34 @@ learning_rate = args.learning_rate
 
 with tf.name_scope('Optimizer'):
     optimizer = tf.train.RMSPropOptimizer(learning_rate=lr).minimize(cost_func)
+    #optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(cost_func)
 
 with tf.name_scope('Accuracy'):
     correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
-log_dir = args.logs + '_' + args.model + '_' + args.classes
+if args.weights == None:
+    log_dir = args.logs + '_' + args.model + '_' + args.classes
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+    weights_path = os.path.join(log_dir, 'weights')
+    if not os.path.exists(weights_path):
+        os.mkdir(weights_path)
 
-if not os.path.exists(log_dir):
-    os.mkdir(log_dir)
+    tensorboard_path = os.path.join(log_dir, 'tensorboard')
+    if not os.path.exists(tensorboard_path):
+        os.mkdir(tensorboard_path)
+
+    train_log = os.path.join(tensorboard_path, 'training')
+    val_log = os.path.join(tensorboard_path, 'validation')
+else:
+    log_dir = args.weights
+    weights_path = os.path.join(log_dir, 'weights')
+    tensorboard_path = os.path.join(log_dir, 'tensorboard')
+    train_log = os.path.join(tensorboard_path, 'training')
+    val_log = os.path.join(tensorboard_path, 'validation')
 
 saver = tf.train.Saver()
-weights_path = os.path.join(log_dir, 'weights')
-if not os.path.exists(weights_path):
-    os.mkdir(weights_path)
-
-tensorboard_path = os.path.join(log_dir, 'tensorboard')
-if not os.path.exists(tensorboard_path):
-    os.mkdir(tensorboard_path)
-
-train_log = os.path.join(tensorboard_path, 'training')
-val_log = os.path.join(tensorboard_path, 'validation')
 
 tf.summary.scalar('loss', cost_func)
 tf.summary.scalar('accuracy', accuracy)
@@ -146,6 +155,13 @@ print('Training on {} Training samples and {} Validation samples'.format(reader.
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    try:
+        saver.restore(sess, tf.train.latest_checkpoint(weights_path))
+        print()
+        print('Model Successfully loaded from {}'.format(weights_path))
+        print()
+    except Exception as e:
+        print(e)
 
     train_summary_writer = tf.summary.FileWriter(train_log, graph=sess.graph)
     val_summary_writer = tf.summary.FileWriter(val_log)
@@ -200,7 +216,7 @@ with tf.Session() as sess:
 
         if val_loss < prev_val_loss:
             prev_val_loss = val_loss
-            model_name = 'ep{:03d}'.format(epoch+1) + '-loss{:.03f}'.format( np.average(loss)) + '-val_loss{:.03f}.ckpt'.format(val_loss)
+            model_name = 'ep{:03d}'.format(args.initial_epoch + epoch+1) + '-loss{:.03f}'.format(np.average(loss)) + '-val_loss{:.03f}.ckpt'.format(val_loss)
             saver.save(sess, os.path.join(weights_path, model_name))
 
     print("Accuracy: {}".format(accuracy.eval({x: val_x, y: val_y})))
