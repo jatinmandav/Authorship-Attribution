@@ -1,6 +1,6 @@
 from tf_models.lstm import LSTMModel
 from tf_models.conv import ConvModel
-from tf_models.convlstm import ConvLSTMModel
+from tf_models.convlstm import ConvLSTMModel1, ConvLSTMModel2
 from tf_models.bidirectional_lstm import BiLSTMModel
 
 from tf_models.res_lstm import ResLSTM
@@ -17,7 +17,7 @@ from ReadData import ReadData
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm, bilstm]', required=True)
+parser.add_argument('--model', '-m', help='Name of Model to use [lstm, cnn, cnnlstm, bilstm, res_lstm, cnnlstmdeep]', required=True)
 parser.add_argument('--training_csv', '-csv', help='Path to Training CSV file', required=True)
 parser.add_argument('--classes', '-c', help='Which model to train? ["Gender", "Age_Group", "Profession"]', required=True)
 parser.add_argument('--embedding', '-e', help='Path to word embedding model | Default: "embeddings/skipgram-100/skipgram.bin"', default='embeddings/skipgram-100/skipgram.bin')
@@ -86,8 +86,11 @@ elif args.model.startswith('cnn'):
     y = tf.placeholder("float", [None, classes], name='Label')
 
     if args.model.endswith('lstm'):
-        model = ConvLSTMModel(hidden_states, classes, attention_size=attention_size,
+        model = ConvLSTMModel1(hidden_states, classes, attention_size=attention_size,
                               use_attention=args.use_attention)
+    elif args.model.endswith('deep'):
+          model = ConvLSTMModel2(hidden_states, classes, attention_size=attention_size,
+                                use_attention=args.use_attention)
     else:
         model = ConvModel(classes)
 
