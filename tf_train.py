@@ -108,8 +108,8 @@ with tf.name_scope('Model'):
 
 with tf.name_scope('Loss'):
     crossent = tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y)
-    #cost_func = (tf.reduce_mean(crossent))/args.batch_size
-    cost_func = tf.reduce_mean(crossent)
+    cost_func = (tf.reduce_mean(crossent))/args.batch_size
+    #cost_func = tf.reduce_mean(crossent)
 
 lr = tf.placeholder('float', [])
 learning_rate = args.learning_rate
