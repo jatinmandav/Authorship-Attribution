@@ -9,6 +9,7 @@ import tensorflow as tf
 import numpy as np
 from tqdm import tqdm_notebook, tqdm
 import os
+import json
 
 import tensorflow.contrib.slim as slim
 
@@ -143,6 +144,9 @@ else:
     train_log = os.path.join(tensorboard_path, 'training')
     val_log = os.path.join(tensorboard_path, 'validation')
 
+with open(os.path.join(weights_path, 'model.json'), 'w') as f:
+    json.dump(args.__dict__, f)
+
 saver = tf.train.Saver()
 
 tf.summary.scalar('loss', cost_func)
@@ -166,6 +170,7 @@ with tf.Session() as sess:
     except Exception as e:
         print(e)
 
+    exit()
     train_summary_writer = tf.summary.FileWriter(train_log, graph=sess.graph)
     val_summary_writer = tf.summary.FileWriter(val_log)
 

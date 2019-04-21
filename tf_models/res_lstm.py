@@ -49,6 +49,7 @@ class ResLSTM:
         res_link = tf.concat([res1, res2], 2)
 
         res_link = tf.nn.dropout(res_link, 0.5)
+
         res_link = tf.nn.leaky_relu(res_link)
 
         return res1, res2, res_link
@@ -68,7 +69,6 @@ class ResLSTM:
             reslstm_out = tf.convert_to_tensor(reslstm_out)
             reslstm_out = tf.tanh(reslstm_out)
             attention = self.attention.layer1(reslstm_out, self.hidden_states)
-            print(attention.get_shape())
             reslstm_out = attention
         else:
             reslstm_out = tf.tanh(reslstm_out[-1])

@@ -45,7 +45,6 @@ class BiLSTMModel:
             rnn_output = tf.convert_to_tensor(rnn_output)
             rnn_output = tf.tanh(rnn_output)
             attention = self.attention.layer1(rnn_output, 2*self.hidden_states)
-            print(attention.get_shape())
             bilstm_out = attention
         else:
             rnn_output = tf.tanh(rnn_output[-1])

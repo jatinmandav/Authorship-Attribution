@@ -92,7 +92,7 @@ class ReadData:
                 vector = self.get_embedding(str(self.val['Post'][i]))
                 vectors.append(vector)
             except Exception as e:
-                print(e)
+                print('ReadData: ', e)
 
         return np.array(vectors), np.array(labels)
 
@@ -120,7 +120,7 @@ class ReadData:
 
                         j += 1
                     except Exception as e:
-                        print(e)
+                        print('ReadData: ', e)
 
                 start_index += self.batch_size
 
@@ -153,7 +153,7 @@ class ReadData:
 
                         j += 1
                     except Exception as e:
-                        print(e)
+                        print('ReadData: ', e)
 
                 start_index += self.batch_size
 
